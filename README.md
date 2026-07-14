@@ -24,8 +24,7 @@ Console.WriteLine($"QSO count: {doc.QsoCount}");
 
 foreach (var qso in doc.Qsos)
 {
-    foreach (var token in qso)
-        Console.WriteLine($"{token.Name}: {token.Data}");
+    Console.WriteLine($"{qso.GetFieldValue("CALL")} on {qso.GetFieldValue("BAND")}");
 }
 ```
 
@@ -146,6 +145,11 @@ var qso = new AdifQso("<CALL:4>NV9U<BAND:3>80M<MODE:3>SSB");
 Console.WriteLine(qso[0].Name); // CALL
 Console.WriteLine(qso[0].Data); // NV9U
 Console.WriteLine(qso.Count);   // 3
+
+// Look up a field by name
+Console.WriteLine(qso.GetFieldValue("CALL")); // NV9U
+Console.WriteLine(qso.GetFieldValue("MODE")); // SSB
+Console.WriteLine(qso.GetFieldValue("FREQ")); // (null)
 ```
 
 ```csharp
@@ -410,6 +414,8 @@ ADIF (Amateur Data Interchange Format) is the standard interchange format for am
 | `AddToken(string, string, bool)` | Add a token by name and data |
 | `AddToken(TokenField)` | Add a token from a field |
 | `AddTokens(TokenFieldList)` | Add multiple tokens |
+| `GetField(string)` | Find a token by tag name (case-insensitive) |
+| `GetFieldValue(string)` | Get a token's data value by tag name |
 
 ### Exception Types
 

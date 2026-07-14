@@ -123,4 +123,61 @@ public class TokenCollectionTests
         Assert.Equal('S', collection[0].UserDefType);
         Assert.Equal("A,B,C", collection[0].EnumerationItems);
     }
+
+    [Fact]
+    public void GetField_ReturnsMatchingToken()
+    {
+        var collection = new TokenCollection("<CALL:4>NV9U<BAND:3>80M<MODE:3>SSB");
+
+        var token = collection.GetField("CALL");
+        Assert.NotNull(token);
+        Assert.Equal("NV9U", token!.Data);
+
+        var token2 = collection.GetField("band");
+        Assert.NotNull(token2);
+        Assert.Equal("80M", token2!.Data);
+    }
+
+    [Fact]
+    public void GetField_CaseSensitive()
+    {
+        var collection = new TokenCollection("<CALL:4>NV9U<BAND:3>80M");
+
+        Assert.NotNull(collection.GetField("CALL", ignoreCase: false));
+        Assert.Null(collection.GetField("call", ignoreCase: false));
+    }
+
+    [Fact]
+    public void GetField_NotFound_ReturnsNull()
+    {
+        var collection = new TokenCollection("<CALL:4>NV9U<BAND:3>80M");
+
+        Assert.Null(collection.GetField("FREQ"));
+    }
+
+    [Fact]
+    public void GetFieldValue_ReturnsData()
+    {
+        var collection = new TokenCollection("<CALL:4>NV9U<BAND:3>80M");
+
+        Assert.Equal("NV9U", collection.GetFieldValue("CALL"));
+        Assert.Equal("80M", collection.GetFieldValue("BAND"));
+    }
+
+    [Fact]
+    public void GetFieldValue_CaseSensitive()
+    {
+        var collection = new TokenCollection("<CALL:4>NV9U");
+
+        Assert.Equal("NV9U", collection.GetFieldValue("CALL", ignoreCase: false));
+        Assert.Null(collection.GetFieldValue("call", ignoreCase: false));
+    }
+
+    [Fact]
+    public void GetFieldValue_NotFound_ReturnsNull()
+    {
+        var collection = new TokenCollection("<CALL:4>NV9U");
+
+        Assert.Null(collection.GetFieldValue("FREQ"));
+    }
 }

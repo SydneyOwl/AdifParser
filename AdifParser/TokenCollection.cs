@@ -147,6 +147,32 @@ public class TokenCollection : IList<Token>, IReadOnlyList<Token>
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Get the first token with the given tag name, or null if not found.
+    /// </summary>
+    /// <param name="name">Tag name to search for.</param>
+    /// <param name="ignoreCase">Whether to ignore case (default true, per ADIF convention).</param>
+    public Token? GetField(string name, bool ignoreCase = true)
+    {
+        var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        foreach (var token in _tokens)
+        {
+            if (token.Name.Equals(name, comparison))
+                return token;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Get the data value of the first token with the given tag name, or null if not found.
+    /// </summary>
+    /// <param name="name">Tag name to search for.</param>
+    /// <param name="ignoreCase">Whether to ignore case (default true, per ADIF convention).</param>
+    public string? GetFieldValue(string name, bool ignoreCase = true)
+    {
+        return GetField(name, ignoreCase)?.Data;
+    }
+
     // ── IList<Token> / IReadOnlyList<Token> implementation ──
 
     public int Count => _tokens.Count;
