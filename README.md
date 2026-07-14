@@ -151,6 +151,10 @@ Console.WriteLine(qso);
 
 ### Working with Tokens
 
+A **Token** is the fundamental building block of ADIF — a single key-value field in the form `<TagName:Length>Data`. For example, `<CALL:4>NV9U` has the tag name `CALL`, data length `4`, and value `NV9U`. Every QSO and header is just a collection of tokens.
+
+Tokens are case-insensitive by convention (ADIF does not distinguish `call` and `CALL`), but can be matched case-sensitively when needed.
+
 ```csharp
 // Parse an individual token
 var token = new Token("<CALL:4>NV9U");
