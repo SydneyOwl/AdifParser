@@ -1,12 +1,15 @@
+using System.Collections;
 using System.Text;
 
 namespace AdifParser;
 
 /// <summary>
-/// Collection of QSO tokens. Base class for ADIFHeader and ADIFQSO.
+/// Collection of ADIF tokens. Base class for AdifHeader and AdifQso.
 /// </summary>
-public class TokenCollection : List<Token>
+public class TokenCollection : IList<Token>, IReadOnlyList<Token>
 {
+    private readonly List<Token> _tokens = new();
+
     public TokenCollection()
     {
     }
@@ -14,42 +17,40 @@ public class TokenCollection : List<Token>
     /// <summary>
     /// Instantiate a collection of tokens. Header or QSO is determined by the trailing tag.
     /// </summary>
-    public TokenCollection(string LineToPullApart)
+    public TokenCollection(string line)
     {
-        PullApartLine(LineToPullApart);
+        ParseLine(line);
     }
 
     /// <summary>
     /// Instantiate a collection of tokens. Header or token is specified.
     /// </summary>
-    public TokenCollection(string LineToPullApart, bool IsHeader)
+    public TokenCollection(string line, bool isHeader)
     {
-        PullApartLine(LineToPullApart, IsHeader);
+        ParseLine(line, isHeader);
     }
 
     /// <summary>
-    /// Pull apart a line of text and parse into a collection of tokens. Header or QSO is determined by the trailing tag.
+    /// Parse a line of text into tokens. Header or QSO is determined by the trailing tag.
     /// </summary>
-    public void PullApartLine(string LineToPullApart)
+    public void ParseLine(string line)
     {
-        InternalPullApart(LineToPullApart.AsSpan(), LineToPullApart.EndsWith("<EOH>", StringComparison.OrdinalIgnoreCase));
+        InternalParse(line.AsSpan(), line.EndsWith("<EOH>", StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
-    /// Pull apart a line of text and parse into a collection of tokens. Header or token is specified.
+    /// Parse a line of text into tokens. Header or token is specified.
     /// </summary>
-    public void PullApartLine(string LineToPullApart, bool IsHeader)
+    public void ParseLine(string line, bool isHeader)
     {
-        InternalPullApart(LineToPullApart.AsSpan(), IsHeader);
+        InternalParse(line.AsSpan(), isHeader);
     }
 
     /// <summary>
-    /// Internal method that performs the function of pulling apart the passed string into individual tokens.
-    /// Uses span-based parsing to avoid Split allocations.
+    /// Internal span-based parsing of a line into individual tokens.
     /// </summary>
-    private void InternalPullApart(ReadOnlySpan<char> line, bool IsHeader)
+    private void InternalParse(ReadOnlySpan<char> line, bool isHeader)
     {
-        // Manual span-based split on '<' to avoid string.Split allocations
         var remaining = line;
         while (remaining.Length > 0)
         {
@@ -73,7 +74,7 @@ public class TokenCollection : List<Token>
             if (!tagName.Equals("EOH".AsSpan(), StringComparison.OrdinalIgnoreCase) &&
                 !tagName.Equals("EOR".AsSpan(), StringComparison.OrdinalIgnoreCase))
             {
-                Add(new Token(tokenSpan.ToString(), IsHeader));
+                _tokens.Add(new Token(tokenSpan.ToString(), isHeader));
             }
 
             remaining = tokenSpan.Slice(gtIndex + 1);
@@ -83,50 +84,50 @@ public class TokenCollection : List<Token>
     /// <summary>
     /// Add a token.
     /// </summary>
-    public void AddToken(string TokenString, bool IsHeader)
+    public void AddToken(string tokenString, bool isHeader)
     {
-        Add(new Token(TokenString, IsHeader));
+        _tokens.Add(new Token(tokenString, isHeader));
     }
 
     /// <summary>
     /// Add a token.
     /// </summary>
-    public void AddToken(string TokenString)
+    public void AddToken(string tokenString)
     {
-        Add(new Token(TokenString));
+        _tokens.Add(new Token(tokenString));
     }
 
     /// <summary>
     /// Add a token.
     /// </summary>
-    public void AddToken(string TagName, string Data, bool IsHeader = false)
+    public void AddToken(string tagName, string data, bool isHeader = false)
     {
-        Add(new Token(TagName, Data, IsHeader));
+        _tokens.Add(new Token(tagName, data, isHeader));
     }
 
     /// <summary>
     /// Add a token.
     /// </summary>
-    public void AddToken(string TagName, string Data, char DataType, string Enumerations = "")
+    public void AddToken(string tagName, string data, char dataType, string enumerations = "")
     {
-        Add(new Token(TagName, Data, DataType, Enumerations));
+        _tokens.Add(new Token(tagName, data, dataType, enumerations));
     }
 
     /// <summary>
     /// Add a token.
     /// </summary>
-    public void AddToken(TokenNameData TheTokenData)
+    public void AddToken(TokenField tokenField)
     {
-        Add(new Token(TheTokenData.TagName, TheTokenData.Data));
+        _tokens.Add(new Token(tokenField.TagName, tokenField.Data));
     }
 
     /// <summary>
     /// Add several tokens.
     /// </summary>
-    public void AddTokens(TokenNameDataList TheTokenNameDataList)
+    public void AddTokens(TokenFieldList fieldList)
     {
-        foreach (var AnItem in TheTokenNameDataList)
-            Add(new Token(AnItem.TagName, AnItem.Data));
+        foreach (var item in fieldList)
+            _tokens.Add(new Token(item.TagName, item.Data));
     }
 
     /// <summary>
@@ -134,15 +135,38 @@ public class TokenCollection : List<Token>
     /// </summary>
     public override string ToString()
     {
-        if (Count == 0)
+        if (_tokens.Count == 0)
             return string.Empty;
 
-        var sb = new StringBuilder(Count * 32);
-        foreach (var thisToken in this)
+        var sb = new StringBuilder(_tokens.Count * 32);
+        foreach (var token in _tokens)
         {
-            sb.Append(thisToken);
+            sb.Append(token);
             sb.Append(' ');
         }
         return sb.ToString();
     }
+
+    // ── IList<Token> / IReadOnlyList<Token> implementation ──
+
+    public int Count => _tokens.Count;
+    public bool IsReadOnly => false;
+
+    public Token this[int index]
+    {
+        get => _tokens[index];
+        set => _tokens[index] = value;
+    }
+
+    public void Add(Token item) => _tokens.Add(item);
+    public void Clear() => _tokens.Clear();
+    public bool Contains(Token item) => _tokens.Contains(item);
+    public void CopyTo(Token[] array, int arrayIndex) => _tokens.CopyTo(array, arrayIndex);
+    public int IndexOf(Token item) => _tokens.IndexOf(item);
+    public void Insert(int index, Token item) => _tokens.Insert(index, item);
+    public bool Remove(Token item) => _tokens.Remove(item);
+    public void RemoveAt(int index) => _tokens.RemoveAt(index);
+
+    public IEnumerator<Token> GetEnumerator() => _tokens.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => _tokens.GetEnumerator();
 }

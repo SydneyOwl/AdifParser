@@ -13,6 +13,7 @@ public class Token
     private string _enumerationItems = "";
     private bool _lengthNeedsUpdate = true;
     private uint _length;
+    private char _userDefType = ' ';
 
     /// <summary>
     /// Instantiate an empty token.
@@ -24,46 +25,46 @@ public class Token
     /// <summary>
     /// Instantiate an ADIF Token.
     /// </summary>
-    /// <param name="TokenString">Single token string assuming there are no embedded special characters.</param>
-    /// <param name="IsHeader">Specifies whether this token is a header or QSO token.</param>
-    public Token(string TokenString, bool IsHeader)
+    /// <param name="tokenString">Single token string assuming there are no embedded special characters.</param>
+    /// <param name="isHeader">Specifies whether this token is a header or QSO token.</param>
+    public Token(string tokenString, bool isHeader)
     {
-        this.IsHeader = IsHeader;
-        if (TokenString.Trim() != "")
-            ParseToken(TokenString);
+        IsHeader = isHeader;
+        if (tokenString.Trim() != "")
+            ParseToken(tokenString);
     }
 
     /// <summary>
     /// Instantiate an ADIF Token.
     /// </summary>
-    /// <param name="TokenString">Single token string assuming there are no embedded special characters.</param>
-    public Token(string TokenString)
+    /// <param name="tokenString">Single token string assuming there are no embedded special characters.</param>
+    public Token(string tokenString)
     {
-        if (TokenString.Trim() != "")
-            ParseToken(TokenString);
+        if (tokenString.Trim() != "")
+            ParseToken(tokenString);
     }
 
     /// <summary>
-    /// Instantiate an ADIF token with Tag Name and Data.
+    /// Instantiate an ADIF token with tag name and data.
     /// </summary>
-    public Token(string TagName, string Data, bool IsHeader = false)
+    public Token(string tagName, string data, bool isHeader = false)
     {
-        _name = TagName;
-        _data = Data;
-        _isHeader = IsHeader;
+        _name = tagName;
+        _data = data;
+        _isHeader = isHeader;
         _lengthNeedsUpdate = true;
     }
 
     /// <summary>
     /// Instantiate an ADIF token with specific header items.
     /// </summary>
-    public Token(string TagName, string Data, char DataType, string Enumerations = "")
+    public Token(string tagName, string data, char dataType, string enumerations = "")
     {
-        _name = TagName;
-        _data = Data;
+        _name = tagName;
+        _data = data;
         _isHeader = true;
-        _enumerationItems = Enumerations;
-        UserDefType = DataType;
+        _enumerationItems = enumerations;
+        _userDefType = dataType;
         _lengthNeedsUpdate = true;
     }
 
@@ -92,7 +93,15 @@ public class Token
         }
     }
 
-    public char UserDefType { get; set; } = ' ';
+    public char UserDefType
+    {
+        get => _userDefType;
+        set
+        {
+            _userDefType = value;
+            _lengthNeedsUpdate = true;
+        }
+    }
 
     public string Data
     {
@@ -125,16 +134,16 @@ public class Token
         }
     }
 
-    private void ParseToken(string TokenString)
+    private void ParseToken(string tokenString)
     {
-        var span = TokenString.AsSpan().TrimStart();
+        var span = tokenString.AsSpan().TrimStart();
         if (span.Length > 0 && span[0] == '<')
             span = span.Slice(1);
 
         // Parse Name: advance until ':'
         int colonIdx = span.IndexOf(':');
         if (colonIdx < 0)
-            throw new Exception($"Invalid ADIF token string: {TokenString}");
+            throw new AdifParseException($"Invalid ADIF token string: {tokenString}");
 
         _name = span.Slice(0, colonIdx).ToString();
         span = span.Slice(colonIdx + 1);
@@ -142,14 +151,14 @@ public class Token
         // Parse Length: advance until ':' or '>'
         int lenEnd = span.IndexOfAny(':', '>');
         if (lenEnd < 0)
-            throw new Exception($"The LENGTH is required in the ADIF token string: {TokenString}");
+            throw new AdifParseException($"The LENGTH is required in the ADIF token string: {tokenString}");
 
         var lengthSpan = span.Slice(0, lenEnd);
         if (lengthSpan.Length == 0)
-            throw new Exception($"The LENGTH is required in the ADIF token string: {TokenString}");
+            throw new AdifParseException($"The LENGTH is required in the ADIF token string: {tokenString}");
 
         if (!uint.TryParse(lengthSpan, out _length))
-            throw new Exception($"LENGTH must be an integer in the ADIF token string: {TokenString}");
+            throw new AdifParseException($"LENGTH must be an integer in the ADIF token string: {tokenString}");
 
         _lengthNeedsUpdate = false;
         span = span.Slice(lenEnd);
@@ -158,13 +167,13 @@ public class Token
         if (span[0] == ':')
         {
             span = span.Slice(1);
-            UserDefType = span[0];
+            _userDefType = span[0];
             span = span.Slice(1);
         }
 
         // Current character should be '>'
         if (span[0] != '>')
-            throw new Exception($"Invalid ADIF token string: {TokenString}");
+            throw new AdifParseException($"Invalid ADIF token string: {tokenString}");
 
         span = span.Slice(1);
 
@@ -189,13 +198,13 @@ public class Token
                 span = span.Slice(1);
                 int enumEnd = span.IndexOf('}');
                 if (enumEnd < 0)
-                    throw new Exception($"Unexpected data after value: {TokenString}");
+                    throw new AdifParseException($"Unexpected data after value: {tokenString}");
 
                 _enumerationItems = span.Slice(0, enumEnd).ToString();
             }
             else
             {
-                throw new Exception($"Unexpected data after value: {TokenString}");
+                throw new AdifParseException($"Unexpected data after value: {tokenString}");
             }
         }
     }
@@ -214,10 +223,10 @@ public class Token
         sb.Append(':');
         sb.Append(_length);
 
-        if (_isHeader && UserDefType != ' ')
+        if (_isHeader && _userDefType != ' ')
         {
             sb.Append(':');
-            sb.Append(UserDefType);
+            sb.Append(_userDefType);
         }
 
         sb.Append('>');

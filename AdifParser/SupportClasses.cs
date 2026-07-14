@@ -1,43 +1,53 @@
 namespace AdifParser;
 
-// TagNameData and TagNameDataList are used for easier building of QSO and header.
-public class TokenNameData
+/// <summary>
+/// A name/data pair used for building ADIF tokens programmatically.
+/// </summary>
+public class TokenField
 {
-    public string Data = "";
-    public string TagName = "";
+    public string TagName { get; set; } = "";
+    public string Data { get; set; } = "";
 
-    public TokenNameData()
+    public TokenField()
     {
     }
 
-    public TokenNameData(string TagName, string Data)
+    public TokenField(string tagName, string data)
     {
-        this.TagName = TagName;
-        this.Data = Data;
+        TagName = tagName;
+        Data = data;
     }
 }
 
-public class TokenNameDataList : List<TokenNameData>
+/// <summary>
+/// A list of <see cref="TokenField"/> items.
+/// </summary>
+public class TokenFieldList : List<TokenField>
 {
 }
 
-// UserDefItemHeader and UserDefItemHeaderList are used for easier building of USERDEF header items.
-public class UserDefItemHeader
+/// <summary>
+/// Represents a USERDEF header field with its type and enumeration metadata.
+/// </summary>
+public class UserDefField
 {
-    public string Data = "";
-    public string EnumerationItems = "";
-    public string TagName = "";
-    public char UserDefType = ' ';
+    public string TagName { get; set; } = "";
+    public string Data { get; set; } = "";
+    public char UserDefType { get; set; } = ' ';
+    public string EnumerationItems { get; set; } = "";
 
-    public UserDefItemHeader(string TagName, string Data, char UserDefType, string EnumerationItems)
+    public UserDefField(string tagName, string data, char userDefType, string enumerationItems)
     {
-        this.TagName = TagName;
-        this.Data = Data;
-        this.UserDefType = UserDefType;
-        this.EnumerationItems = EnumerationItems;
+        TagName = tagName;
+        Data = data;
+        UserDefType = userDefType;
+        EnumerationItems = enumerationItems;
     }
 }
 
-public class UserDefItemHeaderList : List<UserDefItemHeader>
+/// <summary>
+/// A list of <see cref="UserDefField"/> items.
+/// </summary>
+public class UserDefFieldList : List<UserDefField>
 {
 }

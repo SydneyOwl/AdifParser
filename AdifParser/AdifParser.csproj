@@ -8,9 +8,9 @@
 
     <!-- NuGet metadata -->
     <PackageId>AdifParser</PackageId>
-    <Version>2.0.0</Version>
-    <Authors>AdifParser Contributors</Authors>
-    <Description>A high-performance .NET library for parsing, manipulating, and generating ADIF (Amateur Data Interchange Format) files. Based on the original ADIFLib.</Description>
+    <Version>1.0.0</Version>
+    <Authors>kv9y,SydneyOwl</Authors>
+    <Description>.NET library for parsing, manipulating, and generating ADIF (Amateur Data Interchange Format) files. Based on the original ADIFLib(https://github.com/kv9y/ADIFLib).</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>ADIF;Amateur Radio;Ham Radio;Parser;Logging</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

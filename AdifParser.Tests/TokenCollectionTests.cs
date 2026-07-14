@@ -1,14 +1,15 @@
 using AdifParser;
+using Xunit;
 
 namespace AdifParser.Tests;
 
 public class TokenCollectionTests
 {
     [Fact]
-    public void PullApartLine_QSO_ParsesCorrectly()
+    public void ParseLine_Qso_ParsesCorrectly()
     {
         var collection = new TokenCollection();
-        collection.PullApartLine("<CALL:4>NV9U<BAND:3>80M<MODE:3>SSB");
+        collection.ParseLine("<CALL:4>NV9U<BAND:3>80M<MODE:3>SSB");
 
         Assert.Equal(3, collection.Count);
         Assert.Equal("CALL", collection[0].Name);
@@ -20,7 +21,7 @@ public class TokenCollectionTests
     }
 
     [Fact]
-    public void PullApartLine_Constructor_QSO()
+    public void Constructor_String_Qso()
     {
         var collection = new TokenCollection("<CALL:4>NV9U<BAND:3>80M");
 
@@ -30,7 +31,7 @@ public class TokenCollectionTests
     }
 
     [Fact]
-    public void PullApartLine_Constructor_Header()
+    public void Constructor_String_Header()
     {
         var collection = new TokenCollection("<PROGRAMID:9>AdifParser<EOH>", true);
 
@@ -40,7 +41,7 @@ public class TokenCollectionTests
     }
 
     [Fact]
-    public void PullApartLine_SkipsEOR_Terminator()
+    public void ParseLine_SkipsEorTerminator()
     {
         var collection = new TokenCollection("<CALL:4>NV9U<EOR>");
 
@@ -49,7 +50,7 @@ public class TokenCollectionTests
     }
 
     [Fact]
-    public void PullApartLine_SkipsEOH_Terminator()
+    public void ParseLine_SkipsEohTerminator()
     {
         var collection = new TokenCollection("<PROGRAMID:9>AdifParser<EOH>");
 
@@ -58,7 +59,7 @@ public class TokenCollectionTests
     }
 
     [Fact]
-    public void ToString_RoundTrip_QSO()
+    public void ToString_RoundTrip_Qso()
     {
         var original = "<CALL:4>NV9U <BAND:3>80M <MODE:3>SSB ";
         var collection = new TokenCollection("<CALL:4>NV9U<BAND:3>80M<MODE:3>SSB");
@@ -79,10 +80,10 @@ public class TokenCollectionTests
     }
 
     [Fact]
-    public void AddToken_ByTokenNameData()
+    public void AddToken_ByTokenField()
     {
         var collection = new TokenCollection();
-        collection.AddToken(new TokenNameData("CALL", "NV9U"));
+        collection.AddToken(new TokenField("CALL", "NV9U"));
 
         Assert.Single(collection);
         Assert.Equal("CALL", collection[0].Name);
@@ -91,10 +92,10 @@ public class TokenCollectionTests
     [Fact]
     public void AddTokens_Multiple()
     {
-        var list = new TokenNameDataList
+        var list = new TokenFieldList
         {
-            new TokenNameData("CALL", "NV9U"),
-            new TokenNameData("BAND", "80M")
+            new TokenField("CALL", "NV9U"),
+            new TokenField("BAND", "80M")
         };
 
         var collection = new TokenCollection();
@@ -108,5 +109,18 @@ public class TokenCollectionTests
     {
         var collection = new TokenCollection();
         Assert.Equal("", collection.ToString());
+    }
+
+    [Fact]
+    public void AddToken_WithDataTypeAndEnumerations()
+    {
+        var collection = new TokenCollection();
+        collection.AddToken("USERDEF1", "Hello", 'S', "A,B,C");
+
+        Assert.Single(collection);
+        Assert.Equal("USERDEF1", collection[0].Name);
+        Assert.Equal("Hello", collection[0].Data);
+        Assert.Equal('S', collection[0].UserDefType);
+        Assert.Equal("A,B,C", collection[0].EnumerationItems);
     }
 }
