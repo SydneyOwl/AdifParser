@@ -229,11 +229,13 @@ public class AdifDocumentTests
         var qso = doc.Qsos[0];
         Assert.Equal("REMOTE_STATION_LAT", qso[0].Name);
         Assert.Equal("S018 28.430", qso[0].Data);
+        Assert.Equal("S018 28.430", qso.GetFieldValue("REMOTE_STATION_LAT"));
 
         // Last QSO
         var last = doc.Qsos[doc.QsoCount - 1];
         Assert.Equal("CALL", last[0].Name);
         Assert.Equal("3D2IST", last[0].Data);
+        Assert.Equal("3D2IST", last.GetFieldValue("CALL"));
     }
 
     [Fact]
