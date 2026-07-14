@@ -1,3 +1,4 @@
+using System.Text;
 using AdifParser;
 using Xunit;
 
@@ -204,6 +205,19 @@ public class AdifDocumentTests
         {
             File.Delete(path);
         }
+    }
+
+    [Fact]
+    public void ReadFromStream_Basic()
+    {
+        var doc = new AdifDocument();
+        var bytes = Encoding.UTF8.GetBytes("<PROGRAMID:9>AdifParser<EOH>\n<CALL:4>NV9U<BAND:3>80M<eor>");
+        using var stream = new MemoryStream(bytes);
+
+        doc.ReadFromStream(stream);
+
+        Assert.True(doc.HasHeader);
+        Assert.Equal(1, doc.QsoCount);
     }
 
     [Fact]

@@ -137,6 +137,26 @@ public class AdifDocument
     }
 
     /// <summary>
+    /// Read a stream into this document.
+    /// </summary>
+    public void ReadFromStream(Stream stream, CancellationToken cancellationToken = default)
+    {
+        if (stream == null)
+            throw new ArgumentNullException(nameof(stream));
+
+        uint lineNumber = 0;
+        using var reader = new StreamReader(stream, leaveOpen: true);
+        try
+        {
+            ReadFromStream(reader, ref lineNumber, cancellationToken);
+        }
+        catch (AdifParseException ex)
+        {
+            throw new AdifParseException($"Error parsing ADIF stream at line {lineNumber}: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
     /// Parse an ADIF string into this document.
     /// </summary>
     public void ReadFromString(string adifString, CancellationToken cancellationToken = default)

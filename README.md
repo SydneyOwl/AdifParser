@@ -35,6 +35,9 @@ doc.ReadFromString(
     "<PROGRAMID:9>AdifParser<EOH>\n" +
     "<CALL:4>NV9U<BAND:3>80M<eor>\n" +
     "<CALL:4>W1AW<BAND:3>20M<eor>");
+
+Console.WriteLine(doc.HasHeader); // True
+Console.WriteLine(doc.QsoCount);  // 2
 ```
 
 ### Build and save
@@ -60,18 +63,26 @@ doc.SaveToFile("output.adi");
 // Parse a header from a string
 var header = new AdifHeader("<PROGRAMID:9>AdifParser<PROGRAMVERSION:3>2.0<EOH>");
 
-// Access individual header fields
-Console.WriteLine(header[0].Name); // "PROGRAMID"
-Console.WriteLine(header[0].Data); // "AdifParser"
+Console.WriteLine(header[0].Name); // PROGRAMID
+Console.WriteLine(header[0].Data); // AdifParser
+Console.WriteLine(header[1].Name); // PROGRAMVERSION
+Console.WriteLine(header[1].Data); // 2.0
+```
 
+```csharp
 // Build a header programmatically
 var header = new AdifHeader();
 header.Add(new TokenField("PROGRAMID", "AdifParser"));
 header.Add(new TokenField("PROGRAMVERSION", "2.0"));
 
+Console.WriteLine(header);
+// <PROGRAMID:9>AdifParser <PROGRAMVERSION:3>2.0 <eoh>
+```
+
+```csharp
 // Headers can have preamble text before the first tag
 var header = new AdifHeader("MY LOG EXPORT<PROGRAMID:9>AdifParser<EOH>");
-Console.WriteLine(header.Preamble); // "MY LOG EXPORT"
+Console.WriteLine(header.Preamble); // MY LOG EXPORT
 ```
 
 ### Working with QSOs
@@ -80,10 +91,12 @@ Console.WriteLine(header.Preamble); // "MY LOG EXPORT"
 // Parse a QSO
 var qso = new AdifQso("<CALL:4>NV9U<BAND:3>80M<MODE:3>SSB");
 
-// Access by index
-Console.WriteLine(qso[0].Name); // "CALL"
-Console.WriteLine(qso[0].Data); // "NV9U"
+Console.WriteLine(qso[0].Name); // CALL
+Console.WriteLine(qso[0].Data); // NV9U
+Console.WriteLine(qso.Count);   // 3
+```
 
+```csharp
 // Build a QSO with TokenFieldList
 var fields = new TokenFieldList
 {
@@ -94,10 +107,8 @@ var fields = new TokenFieldList
 };
 var qso = new AdifQso(fields);
 
-// Add tokens individually
-var qso = new AdifQso();
-qso.AddToken("CALL", "NV9U");
-qso.AddToken("BAND", "80M");
+Console.WriteLine(qso);
+// <CALL:4>NV9U <BAND:3>80M <FREQ:5>3.750 <MODE:3>SSB <eor>
 ```
 
 ### Working with Tokens
@@ -105,23 +116,25 @@ qso.AddToken("BAND", "80M");
 ```csharp
 // Parse an individual token
 var token = new Token("<CALL:4>NV9U");
-Console.WriteLine(token.Name);   // "CALL"
-Console.WriteLine(token.Data);   // "NV9U"
-Console.WriteLine(token.Length); // 4u
+Console.WriteLine(token.Name);   // CALL
+Console.WriteLine(token.Data);   // NV9U
+Console.WriteLine(token.Length); // 4
+```
 
+```csharp
 // Build a token from parts
 var token = new Token("CALL", "NV9U");
-Console.WriteLine(token.ToString()); // "<CALL:4>NV9U"
+Console.WriteLine(token.ToString()); // <CALL:4>NV9U
+```
 
-// Tokens track whether they belong to a header
-var headerToken = new Token("PROGRAMID", "AdifParser", isHeader: true);
-Console.WriteLine(headerToken.IsHeader); // true
-
+```csharp
 // Length auto-updates when data changes
 var token = new Token("CALL", "NV9U");
-Console.WriteLine(token.Length); // 4u
+Console.WriteLine(token.Length); // 4
 token.Data = "W1AW";
-Console.WriteLine(token.Length); // 4u
+Console.WriteLine(token.Length); // 4
+token.Data = "LONGCALL";
+Console.WriteLine(token.Length); // 8
 ```
 
 ### Working with USERDEF Fields
@@ -131,15 +144,19 @@ ADIF allows user-defined header fields with custom data types and enumerated val
 ```csharp
 // Parse a USERDEF token
 var token = new Token("<USERDEF1:5:S>Hello,{A,B,C}", isHeader: true);
-Console.WriteLine(token.Name);             // "USERDEF1"
-Console.WriteLine(token.Data);             // "Hello"
-Console.WriteLine(token.UserDefType);      // 'S'
-Console.WriteLine(token.EnumerationItems); // "A,B,C"
+Console.WriteLine(token.Name);             // USERDEF1
+Console.WriteLine(token.Data);             // Hello
+Console.WriteLine(token.UserDefType);      // S
+Console.WriteLine(token.EnumerationItems); // A,B,C
+```
 
+```csharp
 // Build a USERDEF token
 var token = new Token("USERDEF1", "Hello", 'S', "A,B,C");
-Console.WriteLine(token.ToString()); // "<USERDEF1:13:S>Hello,{A,B,C}"
+Console.WriteLine(token.ToString()); // <USERDEF1:13:S>Hello,{A,B,C}
+```
 
+```csharp
 // Build with UserDefField
 var field = new UserDefField("USERDEF1", "Hello", 'S', "A,B,C");
 ```
@@ -157,6 +174,8 @@ var qso = new AdifQso();
 qso.AddToken("CALL", "W1AW");
 qso.AddToken("BAND", "20M");
 doc.AddQso(qso);
+
+Console.WriteLine(doc.QsoCount); // 2
 ```
 
 ### Saving and Exporting
@@ -172,7 +191,8 @@ doc.SaveToFile("export.adi");
 doc.SaveToFile("export.adi", overwrite: true);
 
 // Get the ADIF string without saving
-string adifString = doc.ToString();
+string result = doc.ToString();
+// <CALL:4>NV9U <BAND:3>80M <eor>
 ```
 
 ### Error Handling
@@ -182,17 +202,15 @@ var doc = new AdifDocument();
 
 try
 {
-    doc.ReadFromFile("log.adi");
+    doc.ReadFromFile("nonexistent.adi");
 }
 catch (AdifFileException ex)
 {
-    Console.WriteLine($"File error: {ex.Message}");
+    Console.WriteLine(ex.Message); // File does not exist: nonexistent.adi
 }
-catch (AdifParseException ex)
-{
-    Console.WriteLine($"Parse error: {ex.Message}");
-}
+```
 
+```csharp
 // Enable strict mode — throw on unrecognized lines
 var doc = new AdifDocument { ThrowExceptionOnUnknownLine = true };
 try
@@ -201,15 +219,33 @@ try
 }
 catch (AdifParseException ex)
 {
-    Console.WriteLine($"Strict parse error: {ex.Message}");
+    Console.WriteLine(ex.Message); // Unknown line in ADIF file, line 0
 }
+```
+
+### Reading from a Stream
+
+```csharp
+using var stream = File.OpenRead("log.adi");
+var doc = new AdifDocument();
+doc.ReadFromStream(stream);
+
+Console.WriteLine(doc.QsoCount);
+```
+
+Also works with network streams, `MemoryStream`, or any `Stream`:
+
+```csharp
+var bytes = Encoding.UTF8.GetBytes("<CALL:4>NV9U<BAND:3>80M<eor>");
+using var stream = new MemoryStream(bytes);
+var doc = new AdifDocument();
+doc.ReadFromStream(stream);
 ```
 
 ### Cancellation Support
 
 ```csharp
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-
 var doc = new AdifDocument();
 doc.ReadFromString(largeAdifString, cts.Token);
 ```
@@ -226,7 +262,7 @@ doc.ReadFromString(
     "<MODE:3>SSB\n" +
     "<eor>");
 
-Console.WriteLine(doc.QsoCount);  // 1
+Console.WriteLine(doc.QsoCount);     // 1
 Console.WriteLine(doc.Qsos[0].Count); // 3
 ```
 
@@ -237,19 +273,20 @@ You can use `TokenCollection` directly for low-level work:
 ```csharp
 var tokens = new TokenCollection("<CALL:4>NV9U<BAND:3>80M<MODE:3>SSB");
 Console.WriteLine(tokens.Count); // 3
+```
 
-// Add tokens manually
-var tokens = new TokenCollection();
-tokens.AddToken("CALL", "NV9U");
-tokens.AddToken("BAND", "80M");
-
+```csharp
 // Add from a TokenFieldList
 var fields = new TokenFieldList
 {
     new TokenField("CALL", "NV9U"),
     new TokenField("BAND", "80M")
 };
+var tokens = new TokenCollection();
 tokens.AddTokens(fields);
+
+Console.WriteLine(tokens);
+// <CALL:4>NV9U <BAND:3>80M
 ```
 
 ## ADIF Format Overview
@@ -280,6 +317,7 @@ ADIF (Amateur Data Interchange Format) is the standard interchange format for am
 | `ThrowExceptionOnUnknownLine` | Throw on unrecognized lines |
 | `Version` | Library version string |
 | `ReadFromFile(string)` | Parse an ADIF file |
+| `ReadFromStream(Stream, CancellationToken)` | Parse an ADIF stream |
 | `ReadFromString(string, CancellationToken)` | Parse an ADIF string |
 | `SaveToFile(string, bool)` | Save to file |
 | `AddHeader(string)` / `AddHeader(AdifHeader)` | Set the header |
