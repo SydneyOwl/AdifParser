@@ -17,4 +17,10 @@
     <ProjectReference Include="..\AdifParser\AdifParser.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="ADIF_317_test_QSOs_2026_03_22.adi">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

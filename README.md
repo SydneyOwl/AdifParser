@@ -4,6 +4,8 @@ A .NET library for parsing, building, and generating ADIF (Amateur Data Intercha
 
 Based on the original [ADIFLib](https://github.com/kv9y/ADIFLib).
 
+[test adi](AdifParser.Tests/ADIF_317_test_QSOs_2026_03_22.adi) is downloaded from [ADIF Specifications : Released Version 3.1.7](https://www.adif.org.uk/317/index.htm?utm_source=)
+
 ## Installation
 
 ```bash
@@ -31,13 +33,63 @@ foreach (var qso in doc.Qsos)
 
 ```csharp
 var doc = new AdifDocument();
-doc.ReadFromString(
-    "<PROGRAMID:9>AdifParser<EOH>\n" +
-    "<CALL:4>NV9U<BAND:3>80M<eor>\n" +
-    "<CALL:4>W1AW<BAND:3>20M<eor>");
+doc.ReadFromString(@"Wavelog ADIF export
+<ADIF_VER:5>3.1.7
+<PROGRAMID:7>Wavelog
+<PROGRAMVERSION:5>3.0.1
+<EOH>
+
+<BAND:3>10m
+<CALL:6>XXXXXX
+<CLUBLOG_QSO_UPLOAD_STATUS:1>Y
+<CONT:2>EU
+<CQZ:2>14
+<DISTANCE:4>11.2
+<DXCC:3>287
+<EQSL_QSL_SENT:1>Y
+<GRIDSQUARE:6>JN47QJ
+<ITUZ:2>28
+<LAT:9>47.395000
+<LON:8>9.290000
+<LOTW_QSL_SENT:1>Y
+<MODE:3>SSB
+<NAME:4>Kurt
+<OPERATOR:6>4W7EST
+<HRDLOG_QSO_UPLOAD_STATUS:1>Y
+<QRZCOM_QSO_UPLOAD_STATUS:1>Y
+<QSL_RCVD:1>N
+<QSL_SENT:1>Y
+<QSL_SENT_VIA:1>B
+<QSL_VIA:18>QSL -BUREAU, E-QSL
+<QTH:11>St.  Gallen
+<RST_RCVD:2>59
+<RST_SENT:2>59
+<STATE:2>SG
+<SUBMODE:3>USB
+<TX_PWR:2>20
+<LOTW_QSLSDATE:8>20230914
+<QSLSDATE:8>20230906
+<CLUBLOG_QSO_UPLOAD_DATE:8>20230906
+<HRDLOG_QSO_UPLOAD_DATE:8>20231120
+<QRZCOM_QSO_UPLOAD_DATE:8>20231103
+<COUNTRY:11>Switzerland
+<FREQ:6>28.695
+<QSO_DATE:8>20201213
+<TIME_ON:6>102900
+<QSO_DATE_OFF:8>20201213
+<TIME_OFF:6>102900
+<STATION_CALLSIGN:6>4W7EST
+<MY_CITY:4>Dili
+<MY_COUNTRY:11>TIMOR-LESTE
+<MY_DXCC:3>511
+<MY_GRIDSQUARE:6>JN38RG
+<MY_IOTA:6>OC-148
+<MY_CQ_ZONE:2>28
+<MY_ITU_ZONE:2>54
+<EOR>");
 
 Console.WriteLine(doc.HasHeader); // True
-Console.WriteLine(doc.QsoCount);  // 2
+Console.WriteLine(doc.QsoCount);  // 1
 ```
 
 ### Build and save

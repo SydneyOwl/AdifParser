@@ -208,6 +208,35 @@ public class AdifDocumentTests
     }
 
     [Fact]
+    public void ReadFromFile_TestAdi()
+    {
+        var doc = new AdifDocument();
+        doc.ReadFromFile("ADIF_317_test_QSOs_2026_03_22.adi");
+
+        // Header
+        Assert.True(doc.HasHeader);
+        Assert.Equal("ADIF_VER", doc.Header![0].Name);
+        Assert.Equal("3.1.7", doc.Header[0].Data);
+        Assert.Equal("PROGRAMID", doc.Header[2].Name);
+        Assert.Equal("CreateADIFTestFiles", doc.Header[2].Data);
+        Assert.Equal("PROGRAMVERSION", doc.Header[3].Name);
+        Assert.Equal("3.1.7.0", doc.Header[3].Data);
+
+        // QSO count
+        Assert.Equal(6197, doc.QsoCount);
+
+        // First QSO
+        var qso = doc.Qsos[0];
+        Assert.Equal("REMOTE_STATION_LAT", qso[0].Name);
+        Assert.Equal("S018 28.430", qso[0].Data);
+
+        // Last QSO
+        var last = doc.Qsos[doc.QsoCount - 1];
+        Assert.Equal("CALL", last[0].Name);
+        Assert.Equal("3D2IST", last[0].Data);
+    }
+
+    [Fact]
     public void ReadFromStream_Basic()
     {
         var doc = new AdifDocument();
