@@ -21,6 +21,19 @@ public class TokenCollectionTests
     }
 
     [Fact]
+    public void ParseLine_DataWithAngleBrackets_DoesNotSplitField()
+    {
+        var collection = new TokenCollection();
+        collection.ParseLine("<COMMENT:9>A < B > C<CALL:4>NV9U");
+
+        Assert.Equal(2, collection.Count);
+        Assert.Equal("COMMENT", collection[0].Name);
+        Assert.Equal("A < B > C", collection[0].Data);
+        Assert.Equal("CALL", collection[1].Name);
+        Assert.Equal("NV9U", collection[1].Data);
+    }
+
+    [Fact]
     public void Constructor_String_Qso()
     {
         var collection = new TokenCollection("<CALL:4>NV9U<BAND:3>80M");

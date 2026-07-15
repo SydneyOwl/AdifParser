@@ -19,6 +19,9 @@ public class AdifDocumentE2ETests
 
     private int CountField(string name) =>
         Doc.Qsos.Count(q => q.GetField(name) != null);
+
+    private static AdifQso GetQso(int recordNumber) =>
+        Doc.Qsos[recordNumber - 1];
     
     // global
 
@@ -26,6 +29,56 @@ public class AdifDocumentE2ETests
     public void Total_RecordsEmitted_6197()
     {
         Assert.Equal(6197, Doc.QsoCount);
+    }
+
+    [Fact]
+    public void SpecificQsoRecords_HaveExpectedFields()
+    {
+        var qso1 = GetQso(1);
+        Assert.Equal("VE3AAA", qso1.GetFieldValue("CALL"));
+        Assert.Equal("1 KW", qso1.GetFieldValue("MY_AMP"));
+        Assert.Equal("QrpP", qso1.GetFieldValue("mY_poweR_categorY"));
+        Assert.Contains("NAME FRED", qso1.GetFieldValue("QSO_TRANSCRIPT"));
+        Assert.Contains("73 ES GOOD DX", qso1.GetFieldValue("QSO_TRANSCRIPT"));
+
+        var qso2 = GetQso(2);
+        Assert.Equal("4Z6AAA", qso2.GetFieldValue("CALL"));
+        Assert.Equal("Ubuntu 18.04.4 LTS", qso2.GetFieldValue("APP_CreateADIFTestFiles_MY_OS"));
+        Assert.Contains("Cloud scattered", qso2.GetFieldValue("APP_CreateADIFTestFiles_WX"));
+        Assert.Contains("Light rain", qso2.GetFieldValue("APP_CreateADIFTestFiles_WX"));
+        Assert.Equal("S018 28.430", qso2.GetFieldValue("APP_CreateADIFTestFiles_NEXT_LAT"));
+
+        var qso4 = GetQso(4);
+        Assert.Equal("YV9AAC", qso4.GetFieldValue("CALL"));
+        Assert.Contains("123 My Street", qso4.GetFieldValue("ADDRESS"));
+        Assert.Contains("My Post Code", qso4.GetFieldValue("ADDRESS"));
+
+        var qso273 = GetQso(273);
+        Assert.Equal("T2AFQ", qso273.GetFieldValue("CALL"));
+        Assert.Contains("> 10 Watts", qso273.GetFieldValue("COMMENT"));
+        Assert.Contains("< 100 Watts", qso273.GetFieldValue("COMMENT"));
+        Assert.Equal("ATV", qso273.GetFieldValue("MODE"));
+
+        var qso4066 = GetQso(4066);
+        Assert.Equal("CY0FVH", qso4066.GetFieldValue("CALL"));
+        Assert.Equal("SAT", qso4066.GetFieldValue("PROP_MODE"));
+        Assert.Equal("U/V", qso4066.GetFieldValue("SAT_MODE"));
+        Assert.Equal("AO-85", qso4066.GetFieldValue("SAT_NAME"));
+
+        var qso6190 = GetQso(6190);
+        Assert.Equal("W6ISN", qso6190.GetFieldValue("CALL"));
+        Assert.Equal("EM98,FM08,EM97,FM07", qso6190.GetFieldValue("VUCC_GRIDS"));
+        Assert.Equal("WINMOR", qso6190.GetFieldValue("MODE"));
+
+        var qso6194 = GetQso(6194);
+        Assert.Equal("OH4ISQ", qso6194.GetFieldValue("CALL"));
+        Assert.Equal("http://adif.org.uk/305/ADIF_305.htm#QSO_Fields", qso6194.GetFieldValue("WEB"));
+        Assert.Equal("2.5mm", qso6194.GetFieldValue("BAND"));
+
+        var qso6197 = GetQso(6197);
+        Assert.Equal("3D2IST", qso6197.GetFieldValue("CALL"));
+        Assert.Equal("3D2FF-0006", qso6197.GetFieldValue("WWFF_REF"));
+        Assert.Equal("OPERA", qso6197.GetFieldValue("MODE"));
     }
 
     [Fact]
@@ -317,15 +370,13 @@ public class AdifDocumentE2ETests
     [Fact]
     public void FieldCount_APP_WX_INTL_0() => Assert.Equal(0, CountField("APP_CreateADIFTestFiles_WX_INTL"));
 
-    // ═══════════════════════════════════════════════
-    // 呼号格式多样性
-    // ═══════════════════════════════════════════════
+    // Callsign format variety
 
     [Fact]
     public void Callsigns_VariousFormats()
     {
-        // Report 底部有重复呼号统计，但那是生成器内部数据，和文件实际不符。
-        // 改为验证呼号格式多样性。
+        // The report footer contains duplicate-call statistics from generator
+        // internals, which do not match the actual file data. Verify variety instead.
         var calls = new HashSet<string>();
         foreach (var qso in Doc.Qsos)
         {
@@ -333,16 +384,16 @@ public class AdifDocumentE2ETests
             if (call != null) calls.Add(call);
         }
 
-        Assert.Contains(calls, c => c.Contains('/'));   // 含 / 的呼号
-        Assert.Contains(calls, c => c.Length <= 4);      // 短呼号
-        Assert.Contains(calls, c => c.Length >= 6);      // 长呼号
-        Assert.Contains(calls, c => char.IsDigit(c[0])); // 数字开头
+        Assert.Contains(calls, c => c.Contains('/'));   // Callsigns containing /
+        Assert.Contains(calls, c => c.Length <= 4);      // Short callsigns
+        Assert.Contains(calls, c => c.Length >= 6);      // Long callsigns
+        Assert.Contains(calls, c => char.IsDigit(c[0])); // Callsigns starting with a digit
     }
 
     [Fact]
     public void Callsigns_HaveRepeats()
     {
-        // 验证确实有呼号重复出现（不是全唯一）
+        // Verify that some callsigns are repeated, not all unique.
         var callCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var qso in Doc.Qsos)
         {
@@ -352,12 +403,10 @@ public class AdifDocumentE2ETests
         }
 
         var maxRepeat = callCounts.Values.Max();
-        Assert.True(maxRepeat > 1, "应该有重复呼号");
+        Assert.True(maxRepeat > 1, "Expected repeated callsigns");
     }
 
-    // ═══════════════════════════════════════════════
-    // Header 验证
-    // ═══════════════════════════════════════════════
+    // Header validation
 
     [Fact]
     public void Header_HasAllStandardFields()
@@ -386,9 +435,7 @@ public class AdifDocumentE2ETests
         Assert.Equal('L', Doc.Header!.GetField("USERDEF12")!.UserDefType);
     }
 
-    // ═══════════════════════════════════════════════
-    // 首尾 QSO 数据验证
-    // ═══════════════════════════════════════════════
+    // First and last QSO validation
 
     [Fact]
     public void FirstQso_BasicFields()
@@ -437,9 +484,7 @@ public class AdifDocumentE2ETests
         Assert.Equal("3D2FF-0006", last.GetFieldValue("WWFF_REF"));
     }
 
-    // ═══════════════════════════════════════════════
-    // 多行值 / 特殊字符
-    // ═══════════════════════════════════════════════
+    // Multi-line values / special characters
 
     [Fact]
     public void MultiLine_Address()
@@ -462,7 +507,7 @@ public class AdifDocumentE2ETests
         Assert.Contains("Light rain", wx);
     }
 
-    // LENGTH 字段驱动数据边界，数据内含 '<' 不再截断。
+    // LENGTH drives data boundaries, so '<' inside data no longer truncates it.
     [Fact]
     public void SpecialChars_CommentWithAngleBrackets()
     {
@@ -472,9 +517,7 @@ public class AdifDocumentE2ETests
         Assert.Contains("< 100 Watts", comment);
     }
 
-    // ═══════════════════════════════════════════════
-    // 大小写不敏感
-    // ═══════════════════════════════════════════════
+    // Case-insensitive
 
     [Fact]
     public void CaseInsensitive_MixedCaseFieldNames()

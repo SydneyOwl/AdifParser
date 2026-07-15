@@ -177,35 +177,60 @@ public class Token
 
         span = span.Slice(1);
 
-        // Get value string: look for '<', or ',' for USERDEF tags
-        int dataEnd = 0;
-        while (dataEnd < span.Length && span[dataEnd] != '<')
+        // Get value string using the declared ADIF length. Field data may contain
+        // angle brackets, so delimiter scanning would corrupt valid values.
+        if (_length > (uint)span.Length)
+            throw new AdifParseException($"The declared LENGTH exceeds the available data in the ADIF token string: {tokenString}");
+
+        var valueLength = (int)_length;
+        if (valueLength < span.Length && span[valueLength] != '<')
         {
-            if (span[dataEnd] == ',' && _name.StartsWith("USERDEF", StringComparison.OrdinalIgnoreCase))
-                break;
-            dataEnd++;
+            var nextTag = span.Slice(valueLength).IndexOf('<');
+            valueLength = nextTag < 0 ? span.Length : valueLength + nextTag;
         }
 
-        _data = span.Slice(0, dataEnd).ToString();
-        span = span.Slice(dataEnd);
+        var valueSpan = span.Slice(0, valueLength);
+        span = span.Slice(valueLength);
+
+        var enumSpan = ReadOnlySpan<char>.Empty;
+        if (_name.StartsWith("USERDEF", StringComparison.OrdinalIgnoreCase))
+        {
+            var commaIndex = valueSpan.IndexOf(',');
+            if (commaIndex >= 0)
+            {
+                enumSpan = valueSpan.Slice(commaIndex + 1);
+                valueSpan = valueSpan.Slice(0, commaIndex);
+            }
+        }
+
+        _data = valueSpan.ToString();
 
         // Are there enumerations?
-        if (span.Length > 0 && span[0] == ',')
+        if (enumSpan.Length > 0)
+        {
+            ParseEnumeration(enumSpan, tokenString);
+        }
+        else if (span.Length > 0 && span[0] == ',')
         {
             span = span.Slice(1);
-            if (span.Length > 0 && span[0] == '{')
-            {
-                span = span.Slice(1);
-                int enumEnd = span.IndexOf('}');
-                if (enumEnd < 0)
-                    throw new AdifParseException($"Unexpected data after value: {tokenString}");
+            ParseEnumeration(span, tokenString);
+        }
+    }
 
-                _enumerationItems = span.Slice(0, enumEnd).ToString();
-            }
-            else
-            {
+    private void ParseEnumeration(ReadOnlySpan<char> span, string tokenString)
+    {
+        if (span.Length > 0 && span[0] == '{')
+        {
+            span = span.Slice(1);
+            int enumEnd = span.IndexOf('}');
+            if (enumEnd < 0)
                 throw new AdifParseException($"Unexpected data after value: {tokenString}");
-            }
+
+            _enumerationItems = span.Slice(0, enumEnd).ToString();
+        }
+        else
+        {
+            throw new AdifParseException($"Unexpected data after value: {tokenString}");
         }
     }
 

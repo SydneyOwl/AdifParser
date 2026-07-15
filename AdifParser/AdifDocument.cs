@@ -210,6 +210,8 @@ public class AdifDocument
                 continue;
             }
 
+            if (lineBuilder.Length > 0)
+                lineBuilder.Append("\r\n");
             lineBuilder.Append(curLine);
             var lineStr = lineBuilder.ToString();
 

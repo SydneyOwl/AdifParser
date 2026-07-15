@@ -63,22 +63,79 @@ public class TokenCollection : IList<Token>, IReadOnlyList<Token>
             if (gtIndex < 0)
                 break;
 
-            // Peek at the tag name between < and : or >
-            var tagEnd = tokenSpan.Slice(1).IndexOfAny(':', '>');
-            if (tagEnd < 0)
+            var tagContent = tokenSpan.Slice(1, gtIndex - 1);
+            var nameEnd = tagContent.IndexOf(':');
+            var tagName = nameEnd < 0 ? tagContent : tagContent.Slice(0, nameEnd);
+
+            if (tagName.Length == 0)
                 break;
 
-            var tagName = tokenSpan.Slice(1, tagEnd);
-
             // Skip EOH and EOR terminators
-            if (!tagName.Equals("EOH".AsSpan(), StringComparison.OrdinalIgnoreCase) &&
-                !tagName.Equals("EOR".AsSpan(), StringComparison.OrdinalIgnoreCase))
+            if (tagName.Equals("EOH".AsSpan(), StringComparison.OrdinalIgnoreCase) ||
+                tagName.Equals("EOR".AsSpan(), StringComparison.OrdinalIgnoreCase))
             {
-                _tokens.Add(new Token(tokenSpan.ToString(), isHeader));
+                remaining = tokenSpan.Slice(gtIndex + 1);
+                continue;
             }
 
-            remaining = tokenSpan.Slice(gtIndex + 1);
+            if (nameEnd < 0)
+                break;
+
+            var lengthStart = nameEnd + 1;
+            var lengthEnd = tagContent.Slice(lengthStart).IndexOf(':');
+            if (lengthEnd < 0)
+                lengthEnd = tagContent.Length - lengthStart;
+
+            var lengthSpan = tagContent.Slice(lengthStart, lengthEnd);
+            if (!int.TryParse(lengthSpan, out var length) || length < 0)
+                throw new AdifParseException($"LENGTH must be an integer in the ADIF token string: {tokenSpan.ToString()}");
+
+            var tokenEnd = gtIndex + 1 + length;
+            if (tokenEnd > tokenSpan.Length)
+                throw new AdifParseException($"The declared LENGTH exceeds the available data in the ADIF token string: {tokenSpan.ToString()}");
+
+            var separatorEnd = SkipWhitespaceSeparator(tokenSpan, tokenEnd);
+            if (separatorEnd < tokenSpan.Length && tokenSpan[separatorEnd] == '<')
+            {
+                _tokens.Add(new Token(tokenSpan.Slice(0, tokenEnd).ToString(), isHeader));
+                remaining = tokenSpan.Slice(separatorEnd);
+                continue;
+            }
+
+            if (tokenEnd < tokenSpan.Length && tokenSpan[tokenEnd] != '<')
+            {
+                var nextTag = tokenSpan.Slice(tokenEnd).IndexOf('<');
+                tokenEnd = nextTag < 0 ? tokenSpan.Length : tokenEnd + nextTag;
+            }
+
+            tokenEnd = IncludeTrailingUserDefEnumeration(tokenSpan, tokenEnd, tagName);
+
+            _tokens.Add(new Token(tokenSpan.Slice(0, tokenEnd).ToString(), isHeader));
+            remaining = tokenSpan.Slice(tokenEnd);
         }
+    }
+
+    private static int SkipWhitespaceSeparator(ReadOnlySpan<char> tokenSpan, int index)
+    {
+        while (index < tokenSpan.Length && char.IsWhiteSpace(tokenSpan[index]))
+            index++;
+
+        return index;
+    }
+
+    private static int IncludeTrailingUserDefEnumeration(ReadOnlySpan<char> tokenSpan, int tokenEnd, ReadOnlySpan<char> tagName)
+    {
+        if (!tagName.StartsWith("USERDEF".AsSpan(), StringComparison.OrdinalIgnoreCase))
+            return tokenEnd;
+
+        if (tokenEnd + 1 >= tokenSpan.Length || tokenSpan[tokenEnd] != ',' || tokenSpan[tokenEnd + 1] != '{')
+            return tokenEnd;
+
+        var enumEnd = tokenSpan.Slice(tokenEnd + 2).IndexOf('}');
+        if (enumEnd < 0)
+            return tokenEnd;
+
+        return tokenEnd + 2 + enumEnd + 1;
     }
 
     /// <summary>

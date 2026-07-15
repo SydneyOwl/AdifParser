@@ -25,6 +25,16 @@ public class TokenTests
     }
 
     [Fact]
+    public void Parse_DataWithAngleBrackets_UsesDeclaredLength()
+    {
+        var token = new Token("<COMMENT:9>A < B > C");
+
+        Assert.Equal("COMMENT", token.Name);
+        Assert.Equal("A < B > C", token.Data);
+        Assert.Equal(9u, token.Length);
+    }
+
+    [Fact]
     public void Parse_Header_WithUserDefType()
     {
         var token = new Token("<USERDEF1:5:S>Hello,{A,B,C}", true);
