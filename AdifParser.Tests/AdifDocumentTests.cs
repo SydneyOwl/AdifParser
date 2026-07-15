@@ -109,9 +109,9 @@ public class AdifDocumentTests
     }
 
     [Fact]
-    public void ThrowExceptionOnUnknownLine_Enabled()
+    public void RequireRecordTerminatorPerLine_Enabled()
     {
-        var doc = new AdifDocument { ThrowExceptionOnUnknownLine = true };
+        var doc = new AdifDocument { RequireRecordTerminatorPerLine = true };
         Assert.Throws<AdifParseException>(() =>
             doc.ReadFromString("<CALL:4>NV9U<BAND:3>80M"));
     }

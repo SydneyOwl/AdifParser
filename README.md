@@ -239,39 +239,13 @@ string result = doc.ToString();
 
 ### Error Handling
 
-By default, parsing is fail-fast. Invalid tokens, malformed headers, and malformed QSO records throw `AdifParseException`.
-When `FailFastOnParseError` is `true` (the default), the same malformed record throws and parsing stops at that record. 
+`FailFastOnParseError` controls what happens after a complete `<EOH>` or `<EOR>` record is found but that record is malformed..
+By default, **parsing is fail-fast**. Invalid tokens, malformed headers, and malformed QSO records throw `AdifParseException` and parsing stops at that record. 
 Records parsed before the error remain in the document.
 
 ```csharp
-var doc = new AdifDocument();
-
-try
-{
-    doc.ReadFromFile("nonexistent.adi");
-}
-catch (AdifFileException ex)
-{
-    Console.WriteLine(ex.Message); // File does not exist: nonexistent.adi
-}
-```
-
-```csharp
-// Throw on unrecognized lines that do not end with <eoh> or <eor>
-var doc = new AdifDocument { ThrowExceptionOnUnknownLine = true };
-try
-{
-    doc.ReadFromString("<CALL:4>NV9U<BAND:3>80M"); // missing <eor>
-}
-catch (AdifParseException ex)
-{
-    Console.WriteLine(ex.Message); // Unknown line in ADIF file, line 0
-}
-```
-
-```csharp
 // Skip malformed header/QSO records and continue with later records
-var doc = new AdifDocument { FailFastOnParseError = false };
+var doc = new AdifDocument { FailFastOnParseError = false };  // <=== manually set to false here
 doc.ReadFromString(
     "<CALL:4>W1AW<eor>\n" +
     "<CALL:10>BAD<eor>\n" + // invalid: declared length exceeds available data
@@ -282,6 +256,22 @@ Console.WriteLine(doc.Qsos[0].GetFieldValue("CALL")); // W1AW
 Console.WriteLine(doc.Qsos[1].GetFieldValue("CALL")); // NV9U
 ```
 
+
+`RequireRecordTerminatorPerLine` controls whether each physical input line must contain a complete record. Leave it as `false` to allow ADIF records to span multiple lines.
+Set it to `true` when importing a format where each non-empty line is expected to end with `<EOH>` or `<EOR>`.
+
+```csharp
+// Require each non-empty line to complete a header or QSO record
+var doc = new AdifDocument { RequireRecordTerminatorPerLine = true };
+try
+{
+    doc.ReadFromString("<CALL:4>NV9U<BAND:3>80M"); // missing <eor>
+}
+catch (AdifParseException ex)
+{
+    Console.WriteLine(ex.Message); // Record must end with <EOH> or <EOR> on line 0
+}
+```
 
 ### Reading from a Stream
 
@@ -368,7 +358,7 @@ Console.WriteLine(tokens);
 | `Qsos` | The collection of QSO records |
 | `HasHeader` | Whether the document has a header |
 | `QsoCount` | Number of QSOs in the document |
-| `ThrowExceptionOnUnknownLine` | Throw on unrecognized lines |
+| `RequireRecordTerminatorPerLine` | Require each non-empty line to end with `<EOH>` or `<EOR>` |
 | `FailFastOnParseError` | Throw on malformed header/QSO records; set to `false` to skip bad records and continue |
 | `Version` | Library version string |
 | `ReadFromFile(string)` | Parse an ADIF file |

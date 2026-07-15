@@ -22,7 +22,7 @@ public class AdifDocument
     /// <summary>
     /// Should an exception be thrown when a non-blank line doesn't end with &lt;eoh&gt; or &lt;eor&gt;?
     /// </summary>
-    public bool ThrowExceptionOnUnknownLine { get; set; }
+    public bool RequireRecordTerminatorPerLine { get; set; }
 
     /// <summary>
     /// Throw when a header or QSO record is malformed. If false, malformed records are skipped.
@@ -255,9 +255,9 @@ public class AdifDocument
                 lineNumber++;
                 lineBuilder.Clear();
             }
-            else if (ThrowExceptionOnUnknownLine)
+            else if (RequireRecordTerminatorPerLine)
             {
-                throw new AdifParseException($"Unknown line in ADIF file, line {lineNumber}");
+                throw new AdifParseException($"Record must end with <EOH> or <EOR> on line {lineNumber}");
             }
         }
     }
