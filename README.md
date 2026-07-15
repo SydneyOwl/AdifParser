@@ -239,6 +239,10 @@ string result = doc.ToString();
 
 ### Error Handling
 
+By default, parsing is fail-fast. Invalid tokens, malformed headers, and malformed QSO records throw `AdifParseException`.
+When `FailFastOnParseError` is `true` (the default), the same malformed record throws and parsing stops at that record. 
+Records parsed before the error remain in the document.
+
 ```csharp
 var doc = new AdifDocument();
 
@@ -253,7 +257,7 @@ catch (AdifFileException ex)
 ```
 
 ```csharp
-// Enable strict mode — throw on unrecognized lines
+// Throw on unrecognized lines that do not end with <eoh> or <eor>
 var doc = new AdifDocument { ThrowExceptionOnUnknownLine = true };
 try
 {
@@ -264,6 +268,20 @@ catch (AdifParseException ex)
     Console.WriteLine(ex.Message); // Unknown line in ADIF file, line 0
 }
 ```
+
+```csharp
+// Skip malformed header/QSO records and continue with later records
+var doc = new AdifDocument { FailFastOnParseError = false };
+doc.ReadFromString(
+    "<CALL:4>W1AW<eor>\n" +
+    "<CALL:10>BAD<eor>\n" + // invalid: declared length exceeds available data
+    "<CALL:4>NV9U<eor>");
+
+Console.WriteLine(doc.QsoCount); // 2
+Console.WriteLine(doc.Qsos[0].GetFieldValue("CALL")); // W1AW
+Console.WriteLine(doc.Qsos[1].GetFieldValue("CALL")); // NV9U
+```
+
 
 ### Reading from a Stream
 
@@ -308,6 +326,15 @@ Console.WriteLine(doc.QsoCount);     // 1
 Console.WriteLine(doc.Qsos[0].Count); // 3
 ```
 
+Field data is read using the ADIF-declared length, so values may contain `<` and `>` characters without being treated as field delimiters:
+
+```csharp
+var qso = new AdifQso("<COMMENT:9>A < B > C<CALL:4>NV9U");
+
+Console.WriteLine(qso.GetFieldValue("COMMENT")); // A < B > C
+Console.WriteLine(qso.GetFieldValue("CALL"));    // NV9U
+```
+
 ### Building Without a Document
 
 You can use `TokenCollection` directly for low-level work:
@@ -331,21 +358,6 @@ Console.WriteLine(tokens);
 // <CALL:4>NV9U <BAND:3>80M
 ```
 
-## ADIF Format Overview
-
-ADIF (Amateur Data Interchange Format) is the standard interchange format for amateur radio log data. Each field is a token in the form `<TagName:Length>Data`.
-
-- **Header** fields end with `<EOH>`
-- Each **QSO** (contact record) ends with `<EOR>`
-- Example: `<CALL:4>NV9U<BAND:3>80M<eor>`
-
-## Changes from ADIFLib
-
-- `ReadOnlySpan<char>` token splitting — fewer allocations than `string.Split`
-- Lazy `Length` evaluation — only recalculated on serialization
-- Pre-sized `StringBuilder` buffers for `ToString()` output
-- `StringComparison.OrdinalIgnoreCase` instead of `ToUpper()` for case-insensitive comparisons
-
 ## API Reference
 
 ### AdifDocument
@@ -357,6 +369,7 @@ ADIF (Amateur Data Interchange Format) is the standard interchange format for am
 | `HasHeader` | Whether the document has a header |
 | `QsoCount` | Number of QSOs in the document |
 | `ThrowExceptionOnUnknownLine` | Throw on unrecognized lines |
+| `FailFastOnParseError` | Throw on malformed header/QSO records; set to `false` to skip bad records and continue |
 | `Version` | Library version string |
 | `ReadFromFile(string)` | Parse an ADIF file |
 | `ReadFromStream(Stream, CancellationToken)` | Parse an ADIF stream |

@@ -132,6 +132,24 @@ public class TokenTests
     }
 
     [Fact]
+    public void InvalidToken_DeclaredLengthExceedsAvailableData_ThrowsException()
+    {
+        Assert.Throws<AdifParseException>(() => new Token("<CALL:10>NV9U"));
+    }
+
+    [Fact]
+    public void InvalidToken_UserDefEnumerationWithoutBraces_ThrowsException()
+    {
+        Assert.Throws<AdifParseException>(() => new Token("<USERDEF1:9:S>Hello,A,B", true));
+    }
+
+    [Fact]
+    public void InvalidToken_UserDefEnumerationMissingClosingBrace_ThrowsException()
+    {
+        Assert.Throws<AdifParseException>(() => new Token("<USERDEF1:8:S>Hello,{A", true));
+    }
+
+    [Fact]
     public void EmptyString_NoException()
     {
         var token = new Token("");

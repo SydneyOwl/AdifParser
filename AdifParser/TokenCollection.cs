@@ -61,14 +61,14 @@ public class TokenCollection : IList<Token>, IReadOnlyList<Token>
             var tokenSpan = remaining.Slice(ltIndex);
             var gtIndex = tokenSpan.IndexOf('>');
             if (gtIndex < 0)
-                break;
+                throw new AdifParseException($"Invalid ADIF token string: {tokenSpan.ToString()}");
 
             var tagContent = tokenSpan.Slice(1, gtIndex - 1);
             var nameEnd = tagContent.IndexOf(':');
             var tagName = nameEnd < 0 ? tagContent : tagContent.Slice(0, nameEnd);
 
             if (tagName.Length == 0)
-                break;
+                throw new AdifParseException($"Invalid ADIF token string: {tokenSpan.ToString()}");
 
             // Skip EOH and EOR terminators
             if (tagName.Equals("EOH".AsSpan(), StringComparison.OrdinalIgnoreCase) ||
@@ -79,7 +79,7 @@ public class TokenCollection : IList<Token>, IReadOnlyList<Token>
             }
 
             if (nameEnd < 0)
-                break;
+                throw new AdifParseException($"The LENGTH is required in the ADIF token string: {tokenSpan.ToString()}");
 
             var lengthStart = nameEnd + 1;
             var lengthEnd = tagContent.Slice(lengthStart).IndexOf(':');

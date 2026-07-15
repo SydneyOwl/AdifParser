@@ -72,6 +72,46 @@ public class TokenCollectionTests
     }
 
     [Fact]
+    public void ParseLine_NonIntegerLength_ThrowsException()
+    {
+        var collection = new TokenCollection();
+
+        Assert.Throws<AdifParseException>(() => collection.ParseLine("<CALL:abc>NV9U"));
+    }
+
+    [Fact]
+    public void ParseLine_DeclaredLengthExceedsAvailableData_ThrowsException()
+    {
+        var collection = new TokenCollection();
+
+        Assert.Throws<AdifParseException>(() => collection.ParseLine("<CALL:10>NV9U"));
+    }
+
+    [Fact]
+    public void ParseLine_MissingLengthDelimiter_ThrowsException()
+    {
+        var collection = new TokenCollection();
+
+        Assert.Throws<AdifParseException>(() => collection.ParseLine("<CALL>NV9U<BAND:3>80M"));
+    }
+
+    [Fact]
+    public void ParseLine_MalformedTokenWithLaterClosingBracket_ThrowsException()
+    {
+        var collection = new TokenCollection();
+
+        Assert.Throws<AdifParseException>(() => collection.ParseLine("<CALL:4NV9U<BAND:3>80M"));
+    }
+
+    [Fact]
+    public void ParseLine_MissingClosingBracket_ThrowsException()
+    {
+        var collection = new TokenCollection();
+
+        Assert.Throws<AdifParseException>(() => collection.ParseLine("<CALL:4NV9U"));
+    }
+
+    [Fact]
     public void ToString_RoundTrip_Qso()
     {
         var original = "<CALL:4>NV9U <BAND:3>80M <MODE:3>SSB ";

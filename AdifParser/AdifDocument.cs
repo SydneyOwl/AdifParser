@@ -25,6 +25,11 @@ public class AdifDocument
     public bool ThrowExceptionOnUnknownLine { get; set; }
 
     /// <summary>
+    /// Throw when a header or QSO record is malformed. If false, malformed records are skipped.
+    /// </summary>
+    public bool FailFastOnParseError { get; set; } = true;
+
+    /// <summary>
     /// Instantiate an empty ADIF document.
     /// </summary>
     public AdifDocument()
@@ -221,15 +226,32 @@ public class AdifDocument
             if (lineStr.EndsWith("<EOH>", StringComparison.OrdinalIgnoreCase))
             {
                 if (Header != null)
-                    throw new AdifParseException($"File cannot contain more than one header. See line {lineNumber}");
+                {
+                    if (FailFastOnParseError)
+                        throw new AdifParseException($"File cannot contain more than one header. See line {lineNumber}");
 
-                Header = new AdifHeader(lineStr);
+                    lineNumber++;
+                    lineBuilder.Clear();
+                    continue;
+                }
+
+                if (!TryParseHeader(lineStr))
+                {
+                    lineNumber++;
+                    lineBuilder.Clear();
+                    continue;
+                }
                 lineNumber++;
                 lineBuilder.Clear();
             }
             else if (lineStr.EndsWith("<EOR>", StringComparison.OrdinalIgnoreCase))
             {
-                Qsos.Add(new AdifQso(lineStr));
+                if (!TryParseQso(lineStr))
+                {
+                    lineNumber++;
+                    lineBuilder.Clear();
+                    continue;
+                }
                 lineNumber++;
                 lineBuilder.Clear();
             }
@@ -237,6 +259,38 @@ public class AdifDocument
             {
                 throw new AdifParseException($"Unknown line in ADIF file, line {lineNumber}");
             }
+        }
+    }
+
+    private bool TryParseHeader(string line)
+    {
+        try
+        {
+            Header = new AdifHeader(line);
+            return true;
+        }
+        catch (AdifParseException)
+        {
+            if (FailFastOnParseError)
+                throw;
+
+            return false;
+        }
+    }
+
+    private bool TryParseQso(string line)
+    {
+        try
+        {
+            Qsos.Add(new AdifQso(line));
+            return true;
+        }
+        catch (AdifParseException)
+        {
+            if (FailFastOnParseError)
+                throw;
+
+            return false;
         }
     }
 }

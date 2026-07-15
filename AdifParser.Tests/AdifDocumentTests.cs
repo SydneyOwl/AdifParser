@@ -117,6 +117,78 @@ public class AdifDocumentTests
     }
 
     [Fact]
+    public void ReadFromString_InvalidQsoLength_ThrowsAndStopsParsing()
+    {
+        var doc = new AdifDocument();
+
+        Assert.Throws<AdifParseException>(() =>
+            doc.ReadFromString("<CALL:4>W1AW<eor>\n<CALL:10>BAD<eor>\n<CALL:4>NV9U<eor>"));
+
+        Assert.Equal(1, doc.QsoCount);
+        Assert.Equal("W1AW", doc.Qsos[0].GetFieldValue("CALL"));
+    }
+
+    [Fact]
+    public void ReadFromString_MalformedQso_ThrowsWhenFailFastEnabled()
+    {
+        var doc = new AdifDocument();
+
+        Assert.Throws<AdifParseException>(() =>
+            doc.ReadFromString("<CALL:4>W1AW<eor>\n<CALL>BAD<eor>\n<CALL:4>NV9U<eor>"));
+
+        Assert.Equal(1, doc.QsoCount);
+        Assert.Equal("W1AW", doc.Qsos[0].GetFieldValue("CALL"));
+    }
+
+    [Fact]
+    public void ReadFromString_InvalidQso_SkipsAndContinuesWhenFailFastDisabled()
+    {
+        var doc = new AdifDocument { FailFastOnParseError = false };
+
+        doc.ReadFromString("<CALL:4>W1AW<eor>\n<CALL:10>BAD<eor>\n<CALL:4>NV9U<eor>");
+
+        Assert.Equal(2, doc.QsoCount);
+        Assert.Equal("W1AW", doc.Qsos[0].GetFieldValue("CALL"));
+        Assert.Equal("NV9U", doc.Qsos[1].GetFieldValue("CALL"));
+    }
+
+    [Fact]
+    public void ReadFromString_MalformedQso_SkipsAndContinuesWhenFailFastDisabled()
+    {
+        var doc = new AdifDocument { FailFastOnParseError = false };
+
+        doc.ReadFromString("<CALL:4>W1AW<eor>\n<CALL>BAD<eor>\n<CALL:4>NV9U<eor>");
+
+        Assert.Equal(2, doc.QsoCount);
+        Assert.Equal("W1AW", doc.Qsos[0].GetFieldValue("CALL"));
+        Assert.Equal("NV9U", doc.Qsos[1].GetFieldValue("CALL"));
+    }
+
+    [Fact]
+    public void ReadFromString_InvalidHeaderLength_ThrowsBeforeParsingQsos()
+    {
+        var doc = new AdifDocument();
+
+        Assert.Throws<AdifParseException>(() =>
+            doc.ReadFromString("<PROGRAMID:20>Bad<EOH>\n<CALL:4>NV9U<eor>"));
+
+        Assert.False(doc.HasHeader);
+        Assert.Equal(0, doc.QsoCount);
+    }
+
+    [Fact]
+    public void ReadFromString_InvalidHeader_SkipsAndContinuesWhenFailFastDisabled()
+    {
+        var doc = new AdifDocument { FailFastOnParseError = false };
+
+        doc.ReadFromString("<PROGRAMID:20>Bad<EOH>\n<CALL:4>NV9U<eor>");
+
+        Assert.False(doc.HasHeader);
+        Assert.Equal(1, doc.QsoCount);
+        Assert.Equal("NV9U", doc.Qsos[0].GetFieldValue("CALL"));
+    }
+
+    [Fact]
     public void Version_ReturnsNonEmpty()
     {
         var doc = new AdifDocument();
